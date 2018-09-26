@@ -1,25 +1,70 @@
 
-var store = function() {
+var storeCtrl = function() {
   
-  var initialState = {
+  //Core private data
+  const initialState = {
     value1: "",
     value2: ""
   };
   
-  var _state;
+  let _state;
 
-  //Declare actions
-  var UPDATE_VALUES = "UPDATE_VALUES";
-  
-  var UpdateValues = (payload) => {
+  //Private PubSub module
+  const _events = (function() {
+    let listeners = {};
+
+    //Public functions
+    subscribe = function (event, callback) {
+      let self = this;
+
+      if (!self.events.hasOwnProperty(event)) {
+        self.events[event] = [];
+      }
+
+      return self.events[events].push(callback);
+    }
+
+    notify = function (event, state) {
+      let self = this;
+
+      if (!self.events.hasOwnProperty(event)) {
+        return [];
+      }
+
+      return self.events[event].map(callbackFunc => callbackFunc(state));
+    }
+
+    getListeners = function () {
+      return listeners;
+    }
+
     return {
-    type: UPDATE_VAL_1,
+      subscribe: subscribe,
+      notify: notify,
+      getListeners: getListeners
+    }
+  })();
+
+    
+  //Declare actions
+  const UPDATE_VALUES = "UPDATE_VALUES";
+  
+  const UpdateValues = (payload) => {
+    return {
+    type: UPDATE_VALUES,
     payload
     }
-  }
+  };
+
+  //Combine actions
+  const actions = () => {
+    return {
+      updateValues: UpdateValues
+    }
+  };
   
   //Declare reducer
-  var reducer = function (state = _state || initialState, action) {
+  const reducer = function (state = _state || initialState, action = {type: "any", payload: "any"}) {
      switch (action.type) {
        case "UPDATE_VALUES":
          return Object.assign({}, state, action.payload);
@@ -28,55 +73,73 @@ var store = function() {
     return state;
   };
   
-  var dispatch = function (action = {name: "any", payload: "any"}) {
+  //Declare dispatch
+  const dispatch = function (action) {
   _state = reducer(_state, action);
   notify(_state);
   return _state;
   };
-  
-  var subscribers = [];
-  var subscribe = function (fn) {
-    subscribers = subscribers.concat(fn);
-    console.log(subscribers);
-  };
-  
-  var getSubscribers = function () {
-    return subscribers;
-  };
-  
-  var notify = function (state) {
-    subscribers.forEach((fn) => {
-      fn.call(undefined, state);
-    })
-  };
+
   
   var getState = function () {
     return _state;
   };
+
+  //Set initial state
+  (function init () {
+    _state = reducer();
+  })();
   
   return {
     dispatch: dispatch,
     getState: getState,
-    subscribe: subscribe,
-    getSubscribers: getSubscribers
+    actions: actions
   }
 };
 
-var ObjCtrl = function () {
-  //Map state function
-  
-  //Map actions function
-  
-  //Subscribe to store change/ComponentWillReceiveUpdate
+var FormCtrl = function (state, actions, dispatch) {
   
   //ShouldComponentUpdate function
   
-  //Stateless containers
-  
+  //Stateless components
+  const formComponent = () => {
+    return `<div>
+              <form action="">
+                <div>
+                  <label for="">
+                    Value1: 
+                      <input type="text" name: "value1">
+                  </label>
+                  <label for="">
+                    Value2: 
+                      <input type="text" name: "value1">
+                  </label>
+                </div>
+                <button>Update values</button>`
+  };
+
+  const valuesComponent = props => {
+    function generateValuesParagraphs () {
+      return Object.keys(props)
+                   .map((key) => {
+                    const keyNameFirstChar = key[0],
+                          keyName = key.replace(keyNameFirstChar, keyNameFirstChar.toUpperCase())
+                    return `<p>${keyName} = ${props[key]}</p>`
+                   })
+                   .join('\n')
+    };
+
+    return `<div>
+              ${generateValuesParagraphs()}
+            </div>`
+  }
   //Render function
-  
+  const render = state => {
+    return `${formComponent()}
+            ${valuesComponent(state)}`
+  };
   //Init function
-}
+};
 
 var app = (function (store) {
   
